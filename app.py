@@ -1,6 +1,6 @@
-# --- VERSIÓN FINAL PREMIUM v4.0 (CORREGIDA Y ESTABLE) ---
-# Corrige el error FPDFException al especificar anchos fijos en el PDF.
-# Esta es la versión definitiva para la demostración.
+# --- VERSIÓN FINAL v7.0 (Generador de PDF Robusto) ---
+# Se reescribe por completo la generación del PDF para usar un solo bloque
+# de texto pre-formateado, solucionando todos los problemas de layout.
 
 import streamlit as st
 from datetime import datetime
@@ -12,19 +12,21 @@ import fitz  # PyMuPDF
 # ====================================================================
 class PDF_con_Sello_de_Agua(FPDF):
     def header(self):
-        self.set_font('Helvetica', 'B', 50)
+        # El sello de agua de fondo
+        self.set_font('Courier', 'B', 40)
         self.set_text_color(220, 220, 220)
         self.rotate(45, x=self.w / 2 - 60, y=self.h / 2 + 10)
-        self.text(x=self.w / 2 - 60, y=self.h / 2 + 10, txt="Sebastián Careaga Quiroga")
+        self.text(x=self.w / 2 - 60, y=self.h / 2 + 10, txt="Sebastian Careaga Quiroga")
         self.rotate(0)
         self.set_text_color(0, 0, 0)
 
     def footer(self):
+        # El pie de página
         self.set_y(-15)
-        self.set_font('Helvetica', 'I', 8)
+        self.set_font('Courier', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, 'Informe generado por Sebastián Careaga Quiroga', 0, 0, 'L')
-        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'R')
+        self.cell(0, 10, 'Informe generado por Sebastian Careaga Quiroga', 0, 0, 'L')
+        self.cell(0, 10, f'Pagina {self.page_no()}', 0, 0, 'R')
 
 # ====================================================================
 # LÓGICA DE CÁLCULO Y GENERACIÓN DE PDF
@@ -48,81 +50,85 @@ def create_pdf_report(amount_in_uma):
         previous_upper_limit = upper_limit
     final_min_honorary = max(honorary_min_hybrid, MIN_HONORARY_PROCESO_CONOCIMIENTO)
 
-    # --- Generación del PDF ---
-    pdf = PDF_con_Sello_de_Agua('P', 'mm', 'A4')
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    # --- Generación del contenido del PDF como una lista de strings ---
+    report_lines = []
+    separator = "*" * 70
     
-    # Ancho disponible para el contenido (A4: 210mm - 10mm margen izq - 10mm margen der)
-    effective_width = pdf.w - 2 * pdf.l_margin 
-
-    pdf.set_font('Helvetica', 'B', 16)
-    pdf.multi_cell(effective_width, 10, 'INFORME TÉCNICO DE CÁLCULO DE HONORARIOS', 0, 'C')
-    pdf.ln(5)
-
-    pdf.set_font('Helvetica', '', 10)
-    pdf.multi_cell(effective_width, 6, f"FECHA DE EMISIÓN: {datetime.now().strftime('%d/%m/%Y')}", 0, 'L')
-    pdf.multi_cell(effective_width, 6, f"MONTO DEL PROCESO: {amount_in_uma:.2f} UMA", 0, 'L')
-    pdf.multi_cell(effective_width, 6, "NORMATIVA APLICABLE: Ley N° 27.423", 0, 'L')
-    pdf.ln(3); pdf.line(10, pdf.get_y(), 200, pdf.get_y()); pdf.ln(3)
+    report_lines.append(separator)
+    report_lines.append("INFORME TECNICO DE CALCULO DE HONORARIOS".center(70))
+    report_lines.append(separator)
+    report_lines.append("")
+    report_lines.append(f"FECHA DE EMISION: {datetime.now().strftime('%d/%m/%Y')}")
+    report_lines.append(f"MONTO DEL PROCESO: {amount_in_uma:.2f} UMA")
+    report_lines.append("NORMATIVA APLICABLE: Ley N° 27.423")
+    report_lines.append("-" * 70)
     
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.multi_cell(effective_width, 8, "1. FUNDAMENTO NORMATIVO", 0, 'L')
-    pdf.set_font('Helvetica', '', 10)
-    pdf.multi_cell(effective_width, 5, "El presente cálculo se efectúa en estricta conformidad con las disposiciones de la Ley N° 27.423 de Honorarios Profesionales, con especial observancia de:\n\n- Art. 21: Establecimiento de la UMA y la escala porcentual progresiva (\"in fine\").\n- Art. 58 inc. a): Establecimiento del honorario mínimo para procesos de conocimiento (10 UMA).")
-    pdf.ln(3)
+    report_lines.append("1. FUNDAMENTO NORMATIVO")
+    report_lines.append("-" * 70)
+    report_lines.append("El calculo se efectua segun Art. 21 (metodo 'in fine') y")
+    report_lines.append("Art. 58 de la Ley N° 27.423 de Honorarios Profesionales.")
+    report_lines.append("")
 
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.multi_cell(effective_width, 8, "2. METODOLOGÍA APLICADA", 0, 'L')
-    pdf.set_font('Helvetica', '', 10)
-    pdf.multi_cell(effective_width, 5, "Se determinan los límites del rango honorario mediante los siguientes métodos de cálculo progresivo:\n\n- Honorario Máximo: Aplicación escalonada de la alícuota MÁXIMA de cada tramo del Art. 21.\n- Honorario Mínimo: Aplicación de la alícuota MÁXIMA para tramos completos y la alícuota MÍNIMA sobre el excedente.")
-    pdf.ln(3)
+    report_lines.append("-" * 70)
+    report_lines.append("2. METODOLOGIA APLICADA")
+    report_lines.append("-" * 70)
+    report_lines.append("- Honorario Maximo: Aplicacion escalonada de la alicuota")
+    report_lines.append("  MAXIMA de cada tramo del Art. 21.")
+    report_lines.append("- Honorario Minimo: Aplicacion de la alicuota MAXIMA para")
+    report_lines.append("  tramos completos y la alicuota MINIMA sobre el excedente.")
+    report_lines.append("")
 
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.multi_cell(effective_width, 8, "3. DESARROLLO DEL CÁLCULO", 0, 'L')
-    pdf.ln(2)
-
-    pdf.set_font('Courier', 'B', 10)
-    pdf.multi_cell(effective_width, 5, "A. CÁLCULO DEL LÍMITE SUPERIOR (HONORARIO MÁXIMO)")
-    pdf.set_font('Courier', '', 9)
+    report_lines.append("-" * 70)
+    report_lines.append("3. DESARROLLO DEL CALCULO")
+    report_lines.append("-" * 70)
+    report_lines.append("\nA. CALCULO DEL LIMITE SUPERIOR (HONORARIO MAXIMO)")
+    
     temp_previous_upper_limit = 0
     for i, (upper_limit, _, max_perc) in enumerate(FRANJAS):
         if amount_in_uma <= temp_previous_upper_limit: break
         amount_in_tranche = min(amount_in_uma, upper_limit) - temp_previous_upper_limit
-        line = f"  - Tramo {i+1}: {amount_in_tranche:8.2f} UMA x {max_perc:6.2%} = {(amount_in_tranche * max_perc):8.2f} UMA"
-        pdf.multi_cell(effective_width, 5, line, 0, 'L')
+        calc_str = f"{amount_in_tranche:>9.2f} UMA x {max_perc:6.2%}"
+        result_str = f"{(amount_in_tranche * max_perc):>8.2f} UMA"
+        report_lines.append(f"  - Tramo {i+1}: {calc_str:<25} = {result_str}")
         temp_previous_upper_limit = upper_limit
-    pdf.set_font('Courier', 'B', 10)
-    pdf.multi_cell(effective_width, 5, "  -----------------------------------------------------------")
-    pdf.multi_cell(effective_width, 5, f"  >> TOTAL LÍMITE SUPERIOR: {honorary_max:26.2f} UMA")
-    pdf.ln(5)
+    report_lines.append("  " + "-" * 50)
+    report_lines.append(f"  >> TOTAL LIMITE SUPERIOR:".ljust(43) + f"{honorary_max:>12.2f} UMA")
 
-    pdf.set_font('Courier', 'B', 10)
-    pdf.multi_cell(effective_width, 5, "B. CÁLCULO DEL LÍMITE INFERIOR (HONORARIO MÍNIMO)")
-    pdf.set_font('Courier', '', 9)
+    report_lines.append("\nB. CALCULO DEL LIMITE INFERIOR (HONORARIO MINIMO)")
     temp_previous_upper_limit = 0
     for i, (upper_limit, min_perc, max_perc) in enumerate(FRANJAS):
         if amount_in_uma <= temp_previous_upper_limit: break
         amount_in_tranche = min(amount_in_uma, upper_limit) - temp_previous_upper_limit
         perc_to_use = max_perc if amount_in_uma > upper_limit else min_perc
-        line = f"  - Tramo {i+1}: {amount_in_tranche:8.2f} UMA x {perc_to_use:6.2%} = {(amount_in_tranche * perc_to_use):8.2f} UMA"
-        pdf.multi_cell(effective_width, 5, line, 0, 'L')
+        calc_str = f"{amount_in_tranche:>9.2f} UMA x {perc_to_use:6.2%}"
+        result_str = f"{(amount_in_tranche * perc_to_use):>8.2f} UMA"
+        report_lines.append(f"  - Tramo {i+1}: {calc_str:<25} = {result_str}")
         temp_previous_upper_limit = upper_limit
-    pdf.set_font('Courier', 'B', 10)
-    pdf.multi_cell(effective_width, 5, "  -----------------------------------------------------------")
-    pdf.multi_cell(effective_width, 5, f"  >> TOTAL LÍMITE INFERIOR: {honorary_min_hybrid:26.2f} UMA")
-    pdf.ln(5)
-
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.multi_cell(effective_width, 8, "4. CONCLUSIÓN: RANGO DE HONORARIOS SUGERIDO", 0, 'L')
-    pdf.set_font('Helvetica', '', 10)
-    pdf.multi_cell(effective_width, 5, f"Por lo expuesto, y considerando el mínimo legal de {MIN_HONORARY_PROCESO_CONOCIMIENTO:.2f} UMA (Art. 58), se determina que el rango de honorarios para un proceso de {amount_in_uma:.2f} UMA es:")
-    pdf.ln(5)
-    pdf.set_font('Helvetica', 'B', 11)
-    pdf.multi_cell(effective_width, 6, f"   HONORARIO MÍNIMO:  {final_min_honorary:.2f} UMA", 0, 'C')
-    pdf.multi_cell(effective_width, 6, f"   HONORARIO MÁXIMO:  {honorary_max:.2f} UMA", 0, 'C')
+    report_lines.append("  " + "-" * 50)
+    report_lines.append(f"  >> TOTAL LIMITE INFERIOR:".ljust(43) + f"{honorary_min_hybrid:>12.2f} UMA")
     
-    return pdf.output(dest='S').encode('latin-1')
+    report_lines.append("")
+    report_lines.append("-" * 70)
+    report_lines.append("4. CONCLUSION: RANGO DE HONORARIOS SUGERIDO")
+    report_lines.append("-" * 70)
+    report_lines.append(f"Considerando el piso legal de {MIN_HONORARY_PROCESO_CONOCIMIENTO:.2f} UMA (Art. 58),")
+    report_lines.append(f"el rango sugerido es:")
+    report_lines.append("")
+    report_lines.append(f"    HONORARIO MINIMO:  {final_min_honorary:.2f} UMA")
+    report_lines.append(f"    HONORARIO MAXIMO:  {honorary_max:.2f} UMA")
+    report_lines.append(separator)
+
+    # --- Creación del PDF a partir del texto ---
+    pdf = PDF_con_Sello_de_Agua('P', 'mm', 'A4')
+    pdf.add_page()
+    pdf.set_font('Courier', '', 10) # Usamos una sola fuente para todo
+    
+    # Unimos todas las líneas en un solo bloque de texto
+    full_report_text = "\n".join(report_lines)
+    
+    pdf.multi_cell(0, 5, full_report_text)
+    
+    return pdf.output()
 
 # ====================================================================
 # INTERFAZ DE LA APLICACIÓN WEB CON STREAMLIT
@@ -143,12 +149,13 @@ calculate_button = st.button("Generar Informe PDF", type="primary", use_containe
 if calculate_button:
     if amount_uma_input is not None and amount_uma_input > 0:
         with st.spinner('Generando su informe PDF, por favor espere...'):
-            pdf_data = create_pdf_report(amount_uma_input)
+            pdf_data_bytearray = create_pdf_report(amount_uma_input)
+            pdf_data_bytes = bytes(pdf_data_bytearray)
         
         st.success("¡Su informe está listo! A continuación una vista previa:")
 
         try:
-            with fitz.open(stream=pdf_data, filetype="pdf") as doc:
+            with fitz.open(stream=pdf_data_bytes, filetype="pdf") as doc:
                 page = doc.load_page(0)
                 pix = page.get_pixmap(dpi=150)
                 img_bytes = pix.tobytes("png")
@@ -159,7 +166,7 @@ if calculate_button:
 
         st.download_button(
             label="📥 Descargar Informe Completo en PDF",
-            data=pdf_data,
+            data=pdf_data_bytes,
             file_name=f"Informe_Honorarios_{amount_uma_input:.2f}_UMA.pdf",
             mime="application/pdf",
             use_container_width=True
